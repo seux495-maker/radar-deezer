@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar Nouveautés — Deezer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#15121B; --bg-2:#1D1926; --line:#332C40;
+    --ink:#F2EEEA; --ink-dim:#9C93A8;
+    --accent1:#8B5CF6; --accent2:#F97364;
+    --ok:#6FCF97; --err:#E8746B;
+    font-family:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink); min-height:100vh; padding:32px 20px 80px; line-height:1.5}
+  #app{max-width:680px; margin:0 auto}
+  h1{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.6rem; margin:0 0 4px; letter-spacing:-0.01em;
+    background:linear-gradient(100deg,var(--accent1),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{color:var(--ink-dim); font-size:0.92rem; margin:0 0 28px}
+  section{border:1px solid var(--line); border-radius:10px; background:var(--bg-2); padding:22px; margin-bottom:18px}
+  label{display:block; font-size:0.85rem; color:var(--ink-dim); margin:0 0 6px}
+  input[type=text],input[type=number]{width:100%; background:#0F0D14; border:1px solid var(--line); color:var(--ink); border-radius:7px; padding:10px 12px; font-size:0.92rem; font-family:'Inter',sans-serif}
+  input:focus{outline:none; border-color:var(--accent1)}
+  .row{display:flex; gap:12px; flex-wrap:wrap}
+  .row > div{flex:1; min-width:140px}
+  button{font-family:'Inter',sans-serif; font-weight:600; font-size:0.9rem; border-radius:7px; padding:10px 16px; border:1px solid transparent; cursor:pointer; transition:opacity .15s}
+  button:disabled{opacity:.45; cursor:not-allowed}
+  button:hover:not(:disabled){opacity:.88}
+  .primary{background:linear-gradient(100deg,var(--accent1),var(--accent2)); color:#fff}
+  .ghost{background:transparent; border-color:var(--line); color:var(--ink)}
+  #progressWrap{margin-top:16px}
+  #progressBar{height:6px; background:#0F0D14; border-radius:4px; overflow:hidden; border:1px solid var(--line)}
+  #progressFill{height:100%; width:0%; background:linear-gradient(100deg,var(--accent1),var(--accent2)); transition:width .2s}
+  #progressLabel{font-size:0.8rem; color:var(--ink-dim); margin-top:6px}
+  #log{background:#0F0D14; border:1px solid var(--line); border-radius:7px; padding:10px 12px; font-size:0.76rem; color:var(--ink-dim); max-height:180px; overflow-y:auto; white-space:pre-wrap; margin-top:14px; font-family:ui-monospace,monospace; line-height:1.6}
+  #log .error{color:var(--err)}
+  #results{margin-top:8px}
+  .card{display:flex; gap:12px; border:1px solid var(--line); border-radius:9px; padding:12px; margin-bottom:10px; background:var(--bg-2); align-items:center}
+  .card img{width:56px; height:56px; border-radius:6px; flex-shrink:0; background:#0F0D14}
+  .card .meta{flex:1; min-width:0}
+  .card .artist{font-size:0.78rem; color:var(--ink-dim)}
+  .card .title{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:0.95rem; margin:2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .card .date{font-size:0.72rem; color:var(--ink-dim)}
+  .card .links{display:flex; gap:6px; flex-shrink:0}
+  .card .links a{
+    font-size:0.75rem; text-decoration:none; color:var(--ink); border:1px solid var(--line);
+    border-radius:6px; padding:5px 9px; white-space:nowrap;
+  }
+  .card .links a:hover{border-color:var(--accent1)}
+  .badge{font-size:0.68rem; text-transform:uppercase; letter-spacing:0.03em; color:var(--accent2); border:1px solid var(--accent2); border-radius:20px; padding:1px 7px; margin-left:6px}
+  #emptyState{color:var(--ink-dim); font-size:0.88rem; padding:20px; text-align:center}
+  #filterRow{display:none; gap:8px; margin-bottom:14px}
+  #sortRow{display:none; gap:8px; margin-bottom:14px}
+  .filterBtn{background:transparent; border:1px solid var(--line); color:var(--ink-dim); padding:6px 14px; font-size:0.82rem}
+  .filterBtn.active{border-color:var(--accent1); color:var(--ink); background:rgba(139,92,246,0.12)}
+  section h2{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1rem; margin:0 0 12px; color:var(--ink)}
+  .statRow{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line)}
+  .statRow:last-child{border-bottom:none}
+  .statRank{width:22px; text-align:right; color:var(--ink-dim); font-size:0.8rem; flex-shrink:0}
+  .statName{width:38%; font-size:0.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .statBarBg{flex:1; height:6px; background:#0F0D14; border-radius:4px; overflow:hidden; margin:0 8px}
+  .statBarFill{height:100%; background:linear-gradient(100deg,var(--accent1),var(--accent2))}
+  .statCount{font-family:'Space Grotesk',sans-serif; font-weight:600; color:var(--accent2); width:36px; text-align:right; flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Radar Nouveautés</h1>
+  <p class="sub">Lit ton profil Deezer public et liste les dernières sorties (titres/albums) de tes artistes suivis. Aucune connexion requise, aucune donnée envoyée nulle part.</p>
+
+  <section>
+    <div class="row">
+      <div>
+        <label>Ton ID de profil Deezer</label>
+        <input type="text" id="userId" value="533606845">
+      </div>
+      <div style="max-width:160px">
+        <label>Fenêtre "récent" (jours)</label>
+        <input type="number" id="windowDays" value="30" min="1">
+      </div>
+    </div>
+    <div style="margin-top:18px">
+      <button class="primary" id="runBtn">Vérifier les nouveautés</button>
+      <button class="ghost" id="copyLinks">Copier tous les liens Deezer</button>
+    </div>
+    <div id="progressWrap" class="hidden" style="display:none">
+      <div id="progressBar"><div id="progressFill"></div></div>
+      <div id="progressLabel"></div>
+    </div>
+    <div id="log"></div>
+  </section>
+
+  <div id="filterRow">
+    <button class="filterBtn active" data-filter="all">Tous</button>
+    <button class="filterBtn" data-filter="album">Albums</button>
+    <button class="filterBtn" data-filter="single">Singles</button>
+  </div>
+  <div id="sortRow">
+    <button class="filterBtn active" data-sort="rank">Trier par classement</button>
+    <button class="filterBtn" data-sort="date">Trier par date</button>
+  </div>
+  <div id="results"></div>
+
+  <section>
+    <h2>Classement des artistes dans tes playlists</h2>
+    <p class="sub" style="margin:0 0 14px">Compte le nombre de titres distincts par artiste (chaque titre compté une seule fois, même présent dans plusieurs playlists).</p>
+    <div class="row" style="margin-bottom:14px">
+      <div style="max-width:200px">
+        <label>Limiter aux titres ajoutés depuis (jours, laisser vide = tout)</label>
+        <input type="number" id="statsWindowDays" placeholder="ex: 100" min="1">
+      </div>
+    </div>
+    <button class="primary" id="statsBtn">Analyser mes playlists</button>
+    <div id="statsProgress" style="display:none; margin-top:14px">
+      <div id="statsProgressBar" style="height:6px;background:#0F0D14;border-radius:4px;overflow:hidden;border:1px solid var(--line)"><div id="statsProgressFill" style="height:100%;width:0%;background:linear-gradient(100deg,var(--accent1),var(--accent2));transition:width .2s"></div></div>
+      <div id="statsProgressLabel" style="font-size:0.8rem;color:var(--ink-dim);margin-top:6px"></div>
+    </div>
+    <div id="artistStats" style="margin-top:16px"></div>
+  </section>
+</div>
+
+<script>
+const API = 'https://api.deezer.com';
+const SEEN_KEY = 'radarDeezerRO_seen';
+
+function loadSeen(){ try{ return JSON.parse(localStorage.getItem(SEEN_KEY)) || {}; }catch(e){ return {}; } }
+function saveSeen(seen){ localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); }
+
+const logEl = document.getElementById('log');
+function log(msg, cls){
+  const line = document.createElement('div');
+  if(cls) line.className = cls;
+  line.textContent = `[${new Date().toLocaleTimeString('fr-FR')}] ${msg}`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+let jsonpCounter = 0;
+function jsonp(url){
+  return new Promise((resolve, reject) => {
+    const cbName = 'dzcb_' + (jsonpCounter++) + '_' + Date.now();
+    const sep = url.includes('?') ? '&' : '?';
+    const script = document.createElement('script');
+    const cleanup = () => { try{ delete window[cbName]; }catch(e){} script.remove(); };
+    const timer = setTimeout(() => { cleanup(); reject(new Error('Timeout (pas de réponse)')); }, 15000);
+    window[cbName] = (data) => {
+      clearTimeout(timer);
+      cleanup();
+      if(data && data.error){ reject(new Error(data.error.message || JSON.stringify(data.error))); return; }
+      resolve(data);
+    };
+    script.src = `${url}${sep}output=jsonp&callback=${cbName}`;
+    script.onerror = () => { clearTimeout(timer); cleanup(); reject(new Error('Erreur réseau')); };
+    document.head.appendChild(script);
+  });
+}
+
+async function getAllFollowedArtists(userId){
+  let artists = [];
+  let url = `${API}/user/${userId}/artists?limit=100`;
+  while(url){
+    const data = await jsonp(url);
+    if(data.data) artists = artists.concat(data.data);
+    url = data.next || null;
+    await sleep(100);
+  }
+  return artists;
+}
+
+async function getLatestRelease(artistId){
+  const data = await jsonp(`${API}/artist/${artistId}/albums?limit=5`);
+  if(!data.data || !data.data.length) return null;
+  let best = data.data[0];
+  for(const a of data.data){
+    if(a.release_date && (!best.release_date || a.release_date > best.release_date)) best = a;
+  }
+  return best;
+}
+
+let lastResults = [];
+let currentFilter = 'all';
+let sortMode = 'rank';
+let fullArtistCounts = new Map();
+
+function sortResults(list){
+  const sorted = list.slice();
+  if(sortMode === 'date'){
+    sorted.sort((a,b) => (b.release.release_date||'').localeCompare(a.release.release_date||''));
+  } else {
+    sorted.sort((a,b) => {
+      const countA = fullArtistCounts.has(a.artist.id) ? fullArtistCounts.get(a.artist.id).count : 0;
+      const countB = fullArtistCounts.has(b.artist.id) ? fullArtistCounts.get(b.artist.id).count : 0;
+      if(countA !== countB) return countB - countA;
+      return a.artist.name.localeCompare(b.artist.name);
+    });
+  }
+  return sorted;
+}
+
+function renderResults(results){
+  const filtered = currentFilter === 'all' ? results : results.filter(r => (r.release.record_type||'').toLowerCase() === currentFilter);
+  const el = document.getElementById('results');
+  el.innerHTML = '';
+  if(!filtered.length){
+    el.innerHTML = '<div id="emptyState">Aucune nouveauté dans ce filtre.</div>';
+    return;
+  }
+  const sorted = sortResults(filtered);
+  for(const r of sorted){
+    const rel = r.release;
+    const card = document.createElement('div');
+    card.className = 'card';
+    const cover = rel.cover_medium || rel.cover || '';
+    const spotifyQuery = encodeURIComponent(`${r.artist.name} ${rel.title}`);
+    card.innerHTML = `
+      ${cover ? `<img src="${cover}" alt="">` : '<div style="width:56px;height:56px;border-radius:6px;background:#0F0D14;flex-shrink:0"></div>'}
+      <div class="meta">
+        <div class="artist">${r.artist.name}<span class="badge">${rel.record_type || 'sortie'}</span></div>
+        <div class="title" title="${rel.title}">${rel.title}</div>
+        <div class="date">${rel.release_date || ''}</div>
+      </div>
+      <div class="links">
+        <a href="${rel.link}" target="_blank" rel="noopener">Deezer</a>
+        <a href="https://open.spotify.com/search/${spotifyQuery}" target="_blank" rel="noopener">Spotify</a>
+      </div>
+    `;
+    el.appendChild(card);
+  }
+}
+
+document.querySelectorAll('#filterRow .filterBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#filterRow .filterBtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderResults(lastResults);
+  });
+});
+
+document.querySelectorAll('#sortRow .filterBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#sortRow .filterBtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    sortMode = btn.dataset.sort;
+    renderResults(lastResults);
+  });
+});
+
+document.getElementById('copyLinks').onclick = () => {
+  const filtered = currentFilter === 'all' ? lastResults : lastResults.filter(r => (r.release.record_type||'').toLowerCase() === currentFilter);
+  const ordered = sortResults(filtered);
+  if(!ordered.length){ log('Rien à copier dans ce filtre.'); return; }
+  const text = ordered.map(r => r.release.link).join('\n');
+  navigator.clipboard.writeText(text).then(()=> log(`${ordered.length} lien(s) copié(s) (filtre: ${currentFilter}, tri: ${sortMode}).`));
+};
+
+async function getUserPlaylists(userId){
+  let playlists = [];
+  let url = `${API}/user/${userId}/playlists?limit=50`;
+  while(url){
+    const data = await jsonp(url);
+    if(data.data) playlists = playlists.concat(data.data);
+    url = data.next || null;
+    await sleep(100);
+  }
+  return playlists;
+}
+
+async function getPlaylistTracks(playlistId){
+  let tracks = [];
+  let url = `${API}/playlist/${playlistId}/tracks?limit=100`;
+  while(url){
+    const data = await jsonp(url);
+    if(data.data) tracks = tracks.concat(data.data);
+    url = data.next || null;
+    await sleep(80);
+  }
+  return tracks;
+}
+
+function renderStats(ranked){
+  const el = document.getElementById('artistStats');
+  el.innerHTML = '';
+  if(!ranked.length){ el.innerHTML = '<div id="emptyState">Aucune donnée trouvée.</div>'; return; }
+  const max = ranked[0].count;
+  ranked.forEach((a, idx) => {
+    const row = document.createElement('div');
+    row.className = 'statRow';
+    row.innerHTML = `
+      <div class="statRank">${idx+1}</div>
+      <div class="statName" title="${a.name}">${a.name}</div>
+      <div class="statBarBg"><div class="statBarFill" style="width:${Math.round((a.count/max)*100)}%"></div></div>
+      <div class="statCount">${a.count}</div>
+    `;
+    el.appendChild(row);
+  });
+}
+
+document.getElementById('statsBtn').onclick = async () => {
+  const userId = document.getElementById('userId').value.trim();
+  if(!userId){ log('Renseigne ton ID de profil Deezer.', 'error'); return; }
+  const windowDaysRaw = document.getElementById('statsWindowDays').value.trim();
+  const windowDays = windowDaysRaw ? parseInt(windowDaysRaw, 10) : null;
+  const cutoffTs = windowDays ? Math.floor((Date.now() - windowDays*86400000)/1000) : null;
+
+  const btn = document.getElementById('statsBtn');
+  btn.disabled = true;
+  const progWrap = document.getElementById('statsProgress');
+  const progFill = document.getElementById('statsProgressFill');
+  const progLabel = document.getElementById('statsProgressLabel');
+  progWrap.style.display = 'block';
+  const uniqueTracks = new Map(); // trackId -> {artistId, artistName, timeAdd}
+
+  try{
+    log('Récupération de tes playlists...');
+    const allPlaylists = await getUserPlaylists(userId);
+    const own = allPlaylists.filter(p => p.creator && String(p.creator.id) === String(userId));
+    log(`${own.length} playlist(s) à toi trouvée(s) (${allPlaylists.length} au total, publiques uniquement).`);
+
+    for(let i=0;i<own.length;i++){
+      const pl = own[i];
+      progLabel.textContent = `${i+1} / ${own.length} — ${pl.title}`;
+      progFill.style.width = Math.round(((i+1)/own.length)*100) + '%';
+      try{
+        const tracks = await getPlaylistTracks(pl.id);
+        for(const t of tracks){
+          if(!t.artist || !t.id) continue;
+          const ta = typeof t.time_add === 'number' ? t.time_add : null;
+          const existing = uniqueTracks.get(t.id);
+          if(!existing){
+            uniqueTracks.set(t.id, { artistId: t.artist.id, artistName: t.artist.name, timeAdd: ta });
+          } else if(ta !== null && (existing.timeAdd === null || ta > existing.timeAdd)){
+            existing.timeAdd = ta;
+          }
+        }
+      }catch(e){
+        log(`Erreur sur la playlist "${pl.title}" : ${e.message}`, 'error');
+      }
+    }
+
+    let trackList = Array.from(uniqueTracks.values());
+    if(cutoffTs !== null){
+      const before = trackList.length;
+      trackList = trackList.filter(t => t.timeAdd !== null && t.timeAdd >= cutoffTs);
+      log(`Filtre ${windowDays} jour(s) : ${trackList.length} titre(s) distinct(s) sur ${before} retenu(s).`);
+    } else {
+      log(`${trackList.length} titre(s) distinct(s) au total (aucune limite de date).`);
+    }
+
+    const counts = new Map();
+    for(const t of trackList){
+      if(!counts.has(t.artistId)) counts.set(t.artistId, {name: t.artistName, count: 0});
+      counts.get(t.artistId).count++;
+    }
+
+    const ranked = Array.from(counts.values()).sort((a,b) => b.count - a.count).slice(0, 30);
+    renderStats(ranked);
+    fullArtistCounts = counts;
+    if(lastResults.length){ renderResults(lastResults); }
+    log(`Analyse terminée. ${counts.size} artiste(s) distinct(s) sur ${own.length} playlist(s). Le classement s'applique au tri "classement" des nouveautés.`);
+  }catch(e){
+    log('Erreur générale : ' + e.message, 'error');
+  }finally{
+    btn.disabled = false;
+  }
+};
+
+const runBtn = document.getElementById('runBtn');
+log('Page chargée — version JSONP v2.');
+runBtn.onclick = async () => {
+  const userId = document.getElementById('userId').value.trim();
+  const windowDays = parseInt(document.getElementById('windowDays').value, 10) || 30;
+  if(!userId){ log('Renseigne ton ID de profil Deezer.', 'error'); return; }
+
+  runBtn.disabled = true;
+  document.getElementById('progressWrap').style.display = 'block';
+  const progressFill = document.getElementById('progressFill');
+  const progressLabel = document.getElementById('progressLabel');
+  const cutoff = new Date(Date.now() - windowDays*86400000).toISOString().slice(0,10);
+  const results = [];
+
+  try{
+    log('Récupération de la liste des artistes suivis...');
+    const artists = await getAllFollowedArtists(userId);
+    log(`${artists.length} artiste(s) suivi(s) trouvé(s).`);
+
+    for(let i=0;i<artists.length;i++){
+      const artist = artists[i];
+      progressLabel.textContent = `${i+1} / ${artists.length} — ${artist.name}`;
+      progressFill.style.width = Math.round(((i+1)/artists.length)*100) + '%';
+      try{
+        const latest = await getLatestRelease(artist.id);
+        if(latest && latest.release_date){
+          const isRecent = latest.release_date >= cutoff;
+          if(isRecent){
+            results.push({ artist, release: latest });
+          }
+        }
+      }catch(e){
+        log(`Erreur sur ${artist.name} : ${e.message}`, 'error');
+      }
+      await sleep(120);
+    }
+    lastResults = results;
+    document.getElementById('filterRow').style.display = 'flex';
+    document.getElementById('sortRow').style.display = 'flex';
+    renderResults(results);
+    log(`Terminé. ${results.length} nouveauté(s) trouvée(s) sur les ${windowDays} derniers jours.`);
+  }catch(e){
+    log('Erreur générale : ' + e.message, 'error');
+  }finally{
+    runBtn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>
